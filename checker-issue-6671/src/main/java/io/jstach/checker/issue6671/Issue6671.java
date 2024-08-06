@@ -28,6 +28,7 @@ public sealed interface Issue6671 {
 				return _apply(t);
 			}
 			catch (Exception e) {
+				//PropertyFunction.<RuntimeException>sneakyThrow(e); // This works but not in my other project.
 				sneakyThrow(e); // <--- THE ERROR HAPPENS HERE
 				throw new RuntimeException(e);
 			}
