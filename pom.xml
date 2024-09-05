@@ -397,6 +397,11 @@
     </profile>
     <profile>
       <id>checkerframework</id>
+      <activation>
+        <property>
+          <name>!checkerframework.disable</name>
+        </property>
+      </activation>
       <build>
         <plugins>
           <plugin>
@@ -445,5 +450,6 @@
   </profiles>
   <modules>
     <module>checker-issue-6671</module>
+    <module>checker-issue-6789</module>
   </modules>
 </project>

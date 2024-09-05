@@ -1,3 +1,5 @@
+# Issue 6671
+
 To build
 
 `mvn clean install -Pcheckerframework`
@@ -36,3 +38,9 @@ In the other project we get a much worse error:
 ```
 [ERROR] error: StructuralEqualityComparer: unexpected combination:  type: [DECLARED class org.checkerframework.framework.type.AnnotatedTypeMirror$AnnotatedDeclaredType] Object  supertype: [TYPEVAR class org.checkerframework.framework.type.AnnotatedTypeMirror$AnnotatedTypeVariable] R extends Object
 ```
+
+# Issue 6689
+
+cd to directory and run
+
+``mvn clean install -Pcheckerframework`
