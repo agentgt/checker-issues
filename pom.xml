@@ -21,6 +21,7 @@
     <maven.core.version>3.9.8</maven.core.version>
     <jdk.release.version>21.0.2</jdk.release.version>
     <checkerframework.version>3.46.0</checkerframework.version>
+    <eisop.version>3.49.5-eisop1</eisop.version>
     <error-prone.version>2.45.0</error-prone.version>
     <nullaway.version>0.13.8</nullaway.version>
 
@@ -445,6 +446,53 @@
           <groupId>org.checkerframework</groupId>
           <artifactId>checker-qual</artifactId>
           <version>${checkerframework.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>eisop</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <fork>true</fork>
+              <compilerArgs combine.children="append">
+                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
+                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED</arg>
+                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>
+                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED</arg>
+                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED</arg>
+                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED</arg>
+                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED</arg>
+                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED</arg>
+                <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED</arg>
+              </compilerArgs>
+              <annotationProcessorPaths>
+                <path>
+                  <groupId>io.github.eisop</groupId>
+                  <artifactId>checker</artifactId>
+                  <version>${eisop.version}</version>
+                </path>
+              </annotationProcessorPaths>
+              <annotationProcessors>
+                <annotationProcessor>org.checkerframework.checker.nullness.NullnessChecker</annotationProcessor>
+              </annotationProcessors>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+      <dependencies>
+        <dependency>
+          <groupId>io.github.eisop</groupId>
+          <artifactId>checker</artifactId>
+          <version>${eisop.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>io.github.eisop</groupId>
+          <artifactId>checker-qual</artifactId>
+          <version>${eisop.version}</version>
         </dependency>
       </dependencies>
     </profile>

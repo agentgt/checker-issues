@@ -63,18 +63,53 @@ expression) in the body, to compute the value re-assigned into `cause`.
 
 Eclipse's null analysis flags the assignment as a potential null pointer problem - it
 does not assume the second call returns the same already-proven-non-null result as the
-first. Neither the Checker Framework's Nullness Checker nor NullAway flag anything here:
+first. Neither the Checker Framework's Nullness Checker, NullAway, nor EISOP (the
+"reference implementation" fork, see below) flag anything here:
 
 ```
 cd checker-issue-cause-loop
-mvn clean install -Pcheckerframework     # no warnings
-mvn clean install -Pnullaway -Dcheckerframework.disable=true   # no warnings
+mvn clean install -Pcheckerframework                            # no warnings
+mvn clean install -Pnullaway -Dcheckerframework.disable=true    # no warnings
+mvn clean install -Peisop -Dcheckerframework.disable=true       # no warnings
 ```
 
-Both tools do catch an obviously-bad dereference added to the same file as a sanity
-check (see git history for that throwaway edit), so this isn't a case of the tooling
-being misconfigured or silently skipped - they are specifically not flagging the
-double-evaluated `getCause()` call. Whether this refinement (treating a syntactically
-repeated, unannotated method call as returning the same value with nothing proving it's
-`@Pure`/`@Deterministic`/`@SideEffectFree`) is an intentional heuristic or an unsoundness
-gap is the open question for both projects.
+All three tools do catch an obviously-bad dereference added to the same file as a
+sanity check (see git history for that throwaway edit), so this isn't a case of the
+tooling being misconfigured or silently skipped - they are specifically not flagging
+the double-evaluated `getCause()` call.
+
+Turns out this isn't really a heuristic gap for the Checker Framework (or EISOP, which
+ships the identical annotated JDK): `checker-<version>.jar`'s
+`annotated-jdk/src/java.base/share/classes/java/lang/Throwable.java` stub has
+
+```java
+@Pure
+@Nullable
+public synchronized Throwable getCause(@GuardSatisfied Throwable this);
+```
+
+`@Pure` (`org.checkerframework.dataflow.qual.Pure`) is an explicit promise that repeat
+calls with nothing in between are safe to cache/reuse - so CF/EISOP's refinement here is
+sound *conditioned on that stub annotation being correct*, which for `Throwable` it is.
+NullAway doesn't have (or need) a purity annotation for this: it has its own
+`com.uber.nullaway.dataflow.AccessPath`/`AccessPathNullnessPropagation` machinery that
+treats zero-arg method calls as trackable pseudo-fields and refines them flow-sensitively
+without any purity promise - a more aggressive, NullAway-specific heuristic than CF's.
+
+JSpecify itself has no vocabulary for any of this (`@Nullable`/`@NonNull`/`@NullMarked`
+only, no purity concept), so nothing here is guaranteed by the spec these tools jointly
+target - it's each tool's own added machinery carrying the day. The portable/correct
+rewrite that needs none of it:
+
+```java
+Throwable cause = e;
+Throwable tmp = cause.getCause();
+while (tmp != null) {
+	cause = tmp;
+	tmp = tmp.getCause();
+}
+```
+
+which, as a bonus, also halves the number of `getCause()` calls - and since
+`getCause()` is `synchronized` in the real JDK (not just the stub), that's one fewer
+monitor acquisition per iteration too, not just a call the JIT might elide.
