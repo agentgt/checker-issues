@@ -44,3 +44,37 @@ In the other project we get a much worse error:
 cd to directory and run
 
 ``mvn clean install -Pcheckerframework`
+
+# getCause() loop (no issue number yet)
+
+`checker-issue-cause-loop` - reduced from real code that walks a `Throwable` cause
+chain to find the root cause:
+
+```java
+Throwable cause = e;
+while (cause.getCause() != null) {
+	cause = cause.getCause();
+}
+```
+
+`Throwable.getCause()` is modeled as `@Nullable` by both tools. `cause.getCause()` is
+called twice per iteration: once in the while-condition, and again (a distinct call
+expression) in the body, to compute the value re-assigned into `cause`.
+
+Eclipse's null analysis flags the assignment as a potential null pointer problem - it
+does not assume the second call returns the same already-proven-non-null result as the
+first. Neither the Checker Framework's Nullness Checker nor NullAway flag anything here:
+
+```
+cd checker-issue-cause-loop
+mvn clean install -Pcheckerframework     # no warnings
+mvn clean install -Pnullaway -Dcheckerframework.disable=true   # no warnings
+```
+
+Both tools do catch an obviously-bad dereference added to the same file as a sanity
+check (see git history for that throwaway edit), so this isn't a case of the tooling
+being misconfigured or silently skipped - they are specifically not flagging the
+double-evaluated `getCause()` call. Whether this refinement (treating a syntactically
+repeated, unannotated method call as returning the same value with nothing proving it's
+`@Pure`/`@Deterministic`/`@SideEffectFree`) is an intentional heuristic or an unsoundness
+gap is the open question for both projects.
